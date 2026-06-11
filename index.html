@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Tic-Tac-Toe</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --board-bg: #1e293b;
+            --text-color: #f8fafc;
+            --x-color: #38bdf8;
+            --o-color: #fb7185;
+            --hover-color: #334155;
+            --accent: #10b981;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-top: 2rem;
+            font-size: 2.5rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .scoreboard {
+            display: flex;
+            gap: 3rem;
+            margin-bottom: 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: var(--board-bg);
+            padding: 10px 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .player-x { color: var(--x-color); }
+        .player-o { color: var(--o-color); }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 12px;
+            background-color: var(--board-bg);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .cell {
+            background-color: var(--bg-color);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            user-select: none;
+        }
+
+        .cell:hover {
+            background-color: var(--hover-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .cell:active {
+            transform: scale(0.95);
+        }
+
+        .cell.x { color: var(--x-color); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .cell.o { color: var(--o-color); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .controls {
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status {
+            font-size: 1.5rem;
+            font-weight: bold;
+            height: 30px;
+            color: var(--accent);
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--x-color);
+            color: var(--bg-color);
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #7dd3fc;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 1.5rem;
+            color: #64748b;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Tic-Tac-Toe Pro</h1>
+
+    <div class="scoreboard">
+        <div class="player-x">You (X): <span id="player-score">0</span></div>
+        <div class="player-o">AI (O): <span id="ai-score">0</span></div>
+    </div>
+
+    <div class="board" id="board">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+    </div>
+
+    <div class="controls">
+        <div class="status" id="status">Your turn!</div>
+        <button onclick="resetBoard()">Play Again</button>
+    </div>
+
+    <footer>made by prinan saha</footer>
+
+    <script>
+        const cells = document.querySelectorAll('.cell');
+        const statusText = document.getElementById('status');
+        let origBoard;
+        const huPlayer = 'X';
+        const aiPlayer = 'O';
+        let playerScore = 0;
+        let aiScore = 0;
+
+        const winCombos = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6]             // Diagonals
+        ];
+
+        startGame();
+
+        function startGame() {
+            origBoard = Array.from(Array(9).keys());
+            cells.forEach(cell => {
+                cell.innerText = '';
+                cell.className = 'cell'; 
+                cell.addEventListener('click', turnClick, false);
+            });
+            statusText.innerText = "Your turn!";
+            statusText.style.color = "var(--accent)";
+        }
+
+        function turnClick(square) {
+            if (typeof origBoard[square.target.dataset.index] == 'number') {
+                turn(square.target.dataset.index, huPlayer);
+                if (!checkWin(origBoard, huPlayer) && !checkTie()) {
+                    statusText.innerText = "AI is thinking...";
+                    cells.forEach(c => c.removeEventListener('click', turnClick, false));
+                    setTimeout(() => {
+                        turn(bestSpot(), aiPlayer);
+                        if (!checkWin(origBoard, aiPlayer) && !checkTie()) {
+                            cells.forEach(c => c.addEventListener('click', turnClick, false));
+                            statusText.innerText = "Your turn!";
+                        }
+                    }, 400); // Slight delay for realism
+                }
+            }
+        }
+
+        function turn(squareId, player) {
+            origBoard[squareId] = player;
+            document.querySelector(`[data-index='${squareId}']`).innerText = player;
+            document.querySelector(`[data-index='${squareId}']`).classList.add(player.toLowerCase());
+            
+            let gameWon = checkWin(origBoard, player);
+            if (gameWon) gameOver(gameWon);
+        }
+
+        function checkWin(board, player) {
+            let plays = board.reduce((a, e, i) => (e === player) ? a.concat(i) : a, []);
+            let gameWon = null;
+            for (let [index, win] of winCombos.entries()) {
+                if (win.every(elem => plays.indexOf(elem) > -1)) {
+                    gameWon = {index: index, player: player};
+                    break;
+                }
+            }
+            return gameWon;
+        }
+
+        function gameOver(gameWon) {
+            for (let index of winCombos[gameWon.index]) {
+                document.querySelector(`[data-index='${index}']`).style.backgroundColor = 
+                    gameWon.player == huPlayer ? "rgba(56, 189, 248, 0.2)" : "rgba(251, 113, 133, 0.2)";
+            }
+            cells.forEach(cell => cell.removeEventListener('click', turnClick, false));
+            
+            if(gameWon.player === huPlayer) {
+                statusText.innerText = "You Win!";
+                statusText.style.color = "var(--x-color)";
+                playerScore++;
+                document.getElementById('player-score').innerText = playerScore;
+            } else {
+                statusText.innerText = "AI Wins!";
+                statusText.style.color = "var(--o-color)";
+                aiScore++;
+                document.getElementById('ai-score').innerText = aiScore;
+            }
+        }
+
+        function emptySquares() {
+            return origBoard.filter(s => typeof s == 'number');
+        }
+
+        function bestSpot() {
+            return minimax(origBoard, aiPlayer).index;
+        }
+
+        function checkTie() {
+            if (emptySquares().length == 0) {
+                cells.forEach(cell => {
+                    cell.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+                    cell.removeEventListener('click', turnClick, false);
+                });
+                statusText.innerText = "It's a Tie!";
+                statusText.style.color = "#94a3b8";
+                return true;
+            }
+            return false;
+        }
+
+        function resetBoard() {
+            startGame();
+            cells.forEach(cell => cell.style.backgroundColor = "");
+        }
+
+        // Minimax Algorithm - Unbeatable AI
+        function minimax(newBoard, player) {
+            var availSpots = emptySquares(newBoard);
+
+            if (checkWin(newBoard, huPlayer)) {
+                return {score: -10};
+            } else if (checkWin(newBoard, aiPlayer)) {
+                return {score: 10};
+            } else if (availSpots.length === 0) {
+                return {score: 0};
+            }
+
+            var moves = [];
+            for (var i = 0; i < availSpots.length; i++) {
+                var move = {};
+                move.index = newBoard[availSpots[i]];
+                newBoard[availSpots[i]] = player;
+
+                if (player == aiPlayer) {
+                    var result = minimax(newBoard, huPlayer);
+                    move.score = result.score;
+                } else {
+                    var result = minimax(newBoard, aiPlayer);
+                    move.score = result.score;
+                }
+
+                newBoard[availSpots[i]] = move.index;
+                moves.push(move);
+            }
+
+            var bestMove;
+            if (player === aiPlayer) {
+                var bestScore = -10000;
+                for (var i = 0; i < moves.length; i++) {
+                    if (moves[i].score > bestScore) {
+                        bestScore = moves[i].score;
+                        bestMove = i;
+                    }
+                }
+            } else {
+                var bestScore = 10000;
+                for (var i = 0; i < moves.length; i++) {
+                    if (moves[i].score < bestScore) {
+                        bestScore = moves[i].score;
+                        bestMove = i;
+                    }
+                }
+            }
+
+            return moves[bestMove];
+        }
+    </script>
+</body>
+</html>
